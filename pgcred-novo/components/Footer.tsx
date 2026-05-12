@@ -3,7 +3,7 @@
 export default function Footer() {
   async function ativarDemo() {
     try {
-      const res = await fetch("https://pgcred-production.up.railway.app/demo", {
+      const res = await fetch("https://pgcred-2-0.onrender.com/demo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });

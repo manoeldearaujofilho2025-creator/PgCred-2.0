@@ -15,7 +15,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await fetch("https://pgcred-production.up.railway.app/login", {
+      const res = await fetch("https://pgcred-2-0.onrender.com/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, senha }),

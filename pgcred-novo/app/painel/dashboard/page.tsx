@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-const API = "https://pgcred-production.up.railway.app";
+const API = "https://pgcred-2-0.onrender.com";
 
 interface Emprestimo {
   id: number;

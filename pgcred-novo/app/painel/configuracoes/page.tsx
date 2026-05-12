@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const API = "https://pgcred-production.up.railway.app";
+const API = "https://pgcred-2-0.onrender.com";
 
 type Aba = "perfil" | "senha" | "excluir";
 

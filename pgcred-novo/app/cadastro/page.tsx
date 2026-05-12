@@ -23,7 +23,7 @@ export default function Cadastro() {
     setLoading(true);
 
     try {
-      const res = await fetch("https://pgcred-production.up.railway.app/cadastro", {
+      const res = await fetch("https://pgcred-2-0.onrender.com/cadastro", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nome, email, senha }),

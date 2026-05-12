@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const API = "https://pgcred-production.up.railway.app";
+const API = "https://pgcred-2-0.onrender.com";
 
 const navItems = [
   { href: "/dashboard",     icon: "fa-solid fa-gauge",              label: "Dashboard"    },

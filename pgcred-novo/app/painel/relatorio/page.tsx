@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Chart, registerables } from "chart.js";
 Chart.register(...registerables);
 
-const API = "https://pgcred-production.up.railway.app";
+const API = "https://pgcred-2-0.onrender.com";
 
 interface Resumo {
   total_emprestado: number;
