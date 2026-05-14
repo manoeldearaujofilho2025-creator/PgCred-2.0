@@ -14,7 +14,7 @@ const navItems = [
 ];
 
 const contaItems = [
-  { href: "/configuracoes", icon: "fa-solid fa-gear",               label: "Configurações" },
+  { href: "/painel/configuracoes", icon: "fa-solid fa-gear",               label: "Configurações" },
 ];
 
 export default function PainelLayout({ children }: { children: React.ReactNode }) {
