@@ -1,0 +1,5 @@
+{
+  "buildCommand": "cd pgcred-novo && npm install && npm run build",
+  "outputDirectory": "pgcred-novo/.next",
+  "installCommand": "cd pgcred-novo && npm install"
+}
