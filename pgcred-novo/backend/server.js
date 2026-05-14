@@ -7,14 +7,22 @@ require('dotenv').config()
 
 const app = express()
 app.use(cors({
-  origin: [
-    'https://manoeldearaujofilho2025-creator.github.io',
-    'http://127.0.0.1:5500',
-    'https://pg-cred-2-0-ivhq.vercel.app',
-    'http://localhost:5500',
-    'http://localhost:3000',
-    'http://localhost:3001',
-  ],
+  origin: function (origin, callback) {
+    const allowed = [
+      'https://manoeldearaujofilho2025-creator.github.io',
+      'http://127.0.0.1:5500',
+      'http://localhost:5500',
+      'http://localhost:3000',
+      'http://localhost:3001',
+    ]
+
+    // Permite qualquer URL do Vercel
+    if (!origin || allowed.includes(origin) || origin.endsWith('.vercel.app')) {
+      callback(null, true)
+    } else {
+      callback(new Error('Bloqueado pelo CORS'))
+    }
+  },
   credentials: true
 }))
 app.use(express.json())
