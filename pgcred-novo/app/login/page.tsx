@@ -26,7 +26,7 @@ export default function Login() {
       if (res.ok) {
         localStorage.setItem("token", dados.token);
         localStorage.setItem("usuarioEmail", dados.usuario.email);
-        window.location.href = "/dashboard";
+        window.location.href = "/painel/dashboard";
       } else {
         setErro(dados.mensagem || "Email ou senha incorretos.");
       }
