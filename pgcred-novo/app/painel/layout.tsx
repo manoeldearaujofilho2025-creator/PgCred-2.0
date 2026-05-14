@@ -10,7 +10,7 @@ const navItems = [
   { href: "/painel/dashboard",     icon: "fa-solid fa-gauge",              label: "Dashboard"    },
   { href: "/painel/clientes",      icon: "fa-solid fa-users",              label: "Clientes"     },
   { href: "/painel/emprestimos",   icon: "fa-solid fa-money-bill-trend-up", label: "Empréstimos" },
-  { href: "/painel/relatorios",    icon: "fa-solid fa-chart-pie",          label: "Relatórios"   },
+  { href: "/painel/relatorio",    icon: "fa-solid fa-chart-pie",          label: "Relatórios"   },
 ];
 
 const contaItems = [
