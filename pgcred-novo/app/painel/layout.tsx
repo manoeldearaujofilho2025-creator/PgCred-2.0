@@ -7,10 +7,10 @@ import { usePathname } from "next/navigation";
 const API = "https://pgcred-2-0.onrender.com";
 
 const navItems = [
-  { href: "/dashboard",     icon: "fa-solid fa-gauge",              label: "Dashboard"    },
-  { href: "/clientes",      icon: "fa-solid fa-users",              label: "Clientes"     },
-  { href: "/emprestimos",   icon: "fa-solid fa-money-bill-trend-up", label: "Empréstimos" },
-  { href: "/relatorios",    icon: "fa-solid fa-chart-pie",          label: "Relatórios"   },
+  { href: "/painel/dashboard",     icon: "fa-solid fa-gauge",              label: "Dashboard"    },
+  { href: "/painel/clientes",      icon: "fa-solid fa-users",              label: "Clientes"     },
+  { href: "/painel/emprestimos",   icon: "fa-solid fa-money-bill-trend-up", label: "Empréstimos" },
+  { href: "/painel/relatorios",    icon: "fa-solid fa-chart-pie",          label: "Relatórios"   },
 ];
 
 const contaItems = [
