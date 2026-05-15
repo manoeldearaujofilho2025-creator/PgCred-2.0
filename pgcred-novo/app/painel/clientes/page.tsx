@@ -148,6 +148,7 @@ export default function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [busca, setBusca] = useState("");
   const [modalAberto, setModalAberto] = useState(false);
+  const [modalKey, setModalKey] = useState(0);
   const [clienteEditando, setClienteEditando] = useState<Cliente | null>(null);
   const [confirmAberto, setConfirmAberto] = useState(false);
   const [clienteParaDeletar, setClienteParaDeletar] = useState<number | null>(null);
@@ -234,7 +235,7 @@ export default function ClientesPage() {
       />
 
       <ClienteModal
-        key={clienteEditando ? `edit-${clienteEditando.id}` : "novo"}
+        key={modalKey}
         aberto={modalAberto}
         cliente={clienteEditando}
         onClose={() => { setModalAberto(false); setClienteEditando(null); }}
@@ -250,7 +251,7 @@ export default function ClientesPage() {
             <p className="text-[#9ca3af] text-sm mt-1">Gerencie todos os seus clientes</p>
           </div>
           <button
-            onClick={() => { setClienteEditando(null); setModalAberto(true); }}
+            onClick={() => { setClienteEditando(null); setModalKey(k => k + 1); setModalAberto(true); }}
             className="flex items-center gap-2 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:shadow-[0_0_20px_rgba(59,130,246,0.5)] transition-all"
           >
             <i className="fa-solid fa-plus"></i> Novo Cliente
@@ -294,7 +295,7 @@ export default function ClientesPage() {
                       <i className="fa-solid fa-users text-4xl opacity-20 block mb-3 text-[#3B82F6]"></i>
                       <p className="text-sm mb-4">Nenhum cliente cadastrado ainda.</p>
                       <button
-                        onClick={() => { setClienteEditando(null); setModalAberto(true); }}
+                        onClick={() => { setClienteEditando(null); setModalKey(k => k + 1); setModalAberto(true); }}
                         className="mx-auto flex items-center gap-2 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white px-5 py-2.5 rounded-xl text-sm font-bold"
                       >
                         <i className="fa-solid fa-plus"></i> Cadastrar primeiro cliente
@@ -319,7 +320,7 @@ export default function ClientesPage() {
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => { setClienteEditando(c); setModalAberto(true); }}
+                            onClick={() => { setClienteEditando(c); setModalKey(k => k + 1); setModalAberto(true); }}
                             className="border border-[#1e293b] text-[#9ca3af] px-3 py-1.5 rounded-lg text-xs hover:border-[#3B82F6] hover:text-[#3B82F6] transition-colors bg-transparent"
                           >
                             <i className="fa-solid fa-pen"></i>
