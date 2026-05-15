@@ -65,15 +65,10 @@ function ClienteModal({ aberto, cliente, onClose, onSalvar }: {
   onClose: () => void;
   onSalvar: (dados: Omit<Cliente, "id" | "criado_em">, id?: number) => Promise<void>;
 }) {
-  const nomeInicial     = cliente?.nome     ?? "";
-  const cpfInicial      = cliente?.cpf      ?? "";
-  const telefoneInicial = cliente?.telefone ?? "";
-  const emailInicial    = cliente?.email    ?? "";
-
-  const [nome,     setNome]     = useState(nomeInicial);
-  const [cpf,      setCpf]      = useState(cpfInicial);
-  const [telefone, setTelefone] = useState(telefoneInicial);
-  const [email,    setEmail]    = useState(emailInicial);
+  const [nome,     setNome]     = useState(cliente?.nome     ?? "");
+  const [cpf,      setCpf]      = useState(cliente?.cpf      ?? "");
+  const [telefone, setTelefone] = useState(cliente?.telefone ?? "");
+  const [email,    setEmail]    = useState(cliente?.email    ?? "");
   const [loading,  setLoading]  = useState(false);
 
   function mascaraCpf(v: string) {
@@ -239,6 +234,7 @@ export default function ClientesPage() {
       />
 
       <ClienteModal
+        key={clienteEditando ? `edit-${clienteEditando.id}` : "novo"}
         aberto={modalAberto}
         cliente={clienteEditando}
         onClose={() => { setModalAberto(false); setClienteEditando(null); }}
