@@ -37,6 +37,19 @@ function calcularTerminoData(dataEmprestimo: string, numParcelas: number) {
   return data;
 }
 
+// Converte string monetária "1.245,00" para número 1245.00
+function parseMoeda(v: string): number {
+  return parseFloat(v.replace(/\./g, "").replace(",", ".")) || 0;
+}
+
+// Formata número para string monetária "1.245,00"
+function formatMoeda(v: string): string {
+  const digits = v.replace(/\D/g, "");
+  if (!digits) return "";
+  const num = parseInt(digits) / 100;
+  return num.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+}
+
 // =====================
 // TOAST
 // =====================
@@ -84,17 +97,34 @@ function EmprestimoModal({ aberto, emprestimo, clientes, onClose, onSalvar }: {
   onSalvar: (dados: Partial<Emprestimo>, id?: number) => Promise<void>;
 }) {
   const [clienteId, setClienteId] = useState(emprestimo ? String(emprestimo.cliente_id) : "");
-  const [valor, setValor] = useState(emprestimo ? String(emprestimo.valor) : "");
+  const [clienteBusca, setClienteBusca] = useState(emprestimo ? emprestimo.cliente_nome : "");
+  const [showSugestoes, setShowSugestoes] = useState(false);
+  const [valorDisplay, setValorDisplay] = useState(
+    emprestimo ? formatMoeda(String(Math.round(emprestimo.valor * 100))) : ""
+  );
   const [taxaJuros, setTaxaJuros] = useState(emprestimo ? String(emprestimo.taxa_juros) : "");
   const [tipoJuros, setTipoJuros] = useState<"simples" | "price">(emprestimo?.tipo_juros ?? "simples");
   const [numParcelas, setNumParcelas] = useState(emprestimo ? String(emprestimo.num_parcelas) : "");
   const [dataEmprestimo, setDataEmprestimo] = useState(emprestimo ? emprestimo.data_emprestimo.split("T")[0] : new Date().toISOString().split("T")[0]);
   const [observacoes, setObservacoes] = useState(emprestimo?.observacoes ?? "");
   const [loading, setLoading] = useState(false);
+  const sugestoesRef = useRef<HTMLDivElement>(null);
+
+  const valor = parseMoeda(valorDisplay);
+
+  const clientesFiltrados = clientes.filter(c =>
+    c.nome.toLowerCase().includes(clienteBusca.toLowerCase()) && clienteBusca.length > 0
+  );
+
+  function selecionarCliente(c: Cliente) {
+    setClienteId(String(c.id));
+    setClienteBusca(c.nome);
+    setShowSugestoes(false);
+  }
 
   // Simulação calculada inline
   const simAtual: Simulacao | null = (() => {
-    const v = parseFloat(valor), t = parseFloat(taxaJuros), p = parseInt(numParcelas);
+    const v = valor, t = parseFloat(taxaJuros), p = parseInt(numParcelas);
     if (!v || !t || !p) return null;
     const taxa = t / 100;
     let total = 0, parcela = 0;
@@ -120,7 +150,15 @@ function EmprestimoModal({ aberto, emprestimo, clientes, onClose, onSalvar }: {
     e.preventDefault();
     if (!clienteId || !valor || !taxaJuros || !numParcelas || !dataEmprestimo) return;
     setLoading(true);
-    await onSalvar({ cliente_id: Number(clienteId), valor: Number(valor), taxa_juros: Number(taxaJuros), tipo_juros: tipoJuros, num_parcelas: Number(numParcelas), data_emprestimo: dataEmprestimo, observacoes }, emprestimo?.id);
+    await onSalvar({
+      cliente_id: Number(clienteId),
+      valor,
+      taxa_juros: Number(taxaJuros),
+      tipo_juros: tipoJuros,
+      num_parcelas: Number(numParcelas),
+      data_emprestimo: dataEmprestimo,
+      observacoes
+    }, emprestimo?.id);
     setLoading(false);
   }
 
@@ -137,18 +175,60 @@ function EmprestimoModal({ aberto, emprestimo, clientes, onClose, onSalvar }: {
         <p className="text-[#9ca3af] text-sm mb-6">{emprestimo ? "Atualize os dados" : "Preencha os dados para registrar"}</p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div>
+
+          {/* BUSCA DE CLIENTE */}
+          <div className="relative">
             <label className={labelClass}>Cliente *</label>
-            <select className={inputClass} value={clienteId} onChange={e => setClienteId(e.target.value)} required>
-              <option value="">Selecione um cliente</option>
-              {clientes.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-            </select>
+            <input
+              className={inputClass}
+              placeholder="Digite o nome do cliente..."
+              value={clienteBusca}
+              onChange={e => { setClienteBusca(e.target.value); setClienteId(""); setShowSugestoes(true); }}
+              onFocus={() => setShowSugestoes(true)}
+              onBlur={() => setTimeout(() => setShowSugestoes(false), 150)}
+              required={!clienteId}
+              autoComplete="off"
+            />
+            {/* Campo hidden para garantir que um cliente foi selecionado */}
+            {clienteId && <input type="hidden" value={clienteId} required />}
+
+            {showSugestoes && clientesFiltrados.length > 0 && (
+              <div ref={sugestoesRef} className="absolute z-50 w-full mt-1 bg-[#1e293b] border border-[#1e293b] rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.4)] max-h-48 overflow-y-auto">
+                {clientesFiltrados.map(c => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => selecionarCliente(c)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-[#111827] transition-colors"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#3B82F6] to-[#2563EB] flex items-center justify-center text-xs font-bold flex-shrink-0">
+                      {c.nome.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-white">{c.nome}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {showSugestoes && clienteBusca.length > 0 && clientesFiltrados.length === 0 && (
+              <div className="absolute z-50 w-full mt-1 bg-[#1e293b] border border-[#1e293b] rounded-xl px-4 py-3 text-sm text-[#9ca3af]">
+                Nenhum cliente encontrado
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>Valor (R$) *</label>
-              <input className={inputClass} type="number" placeholder="0,00" min="0" step="0.01" value={valor} onChange={e => setValor(e.target.value)} required />
+              <input
+                className={inputClass}
+                type="text"
+                inputMode="numeric"
+                placeholder="0,00"
+                value={valorDisplay}
+                onChange={e => setValorDisplay(formatMoeda(e.target.value))}
+                required
+              />
             </div>
             <div>
               <label className={labelClass}>Data *</label>
@@ -226,13 +306,12 @@ export default function EmprestimosPage() {
   const [filtroDataInicio, setFiltroDataInicio] = useState("");
   const [filtroDataFim, setFiltroDataFim] = useState("");
   const [modalAberto, setModalAberto] = useState(false);
+  const [modalKey, setModalKey] = useState(0);
   const [empEditando, setEmpEditando] = useState<Emprestimo | null>(null);
   const [confirmAberto, setConfirmAberto] = useState(false);
   const [empParaDeletar, setEmpParaDeletar] = useState<number | null>(null);
   const [toast, setToast] = useState({ msg: "", tipo: "success" as "success" | "error", visivel: false });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  
 
   function showToast(msg: string, tipo: "success" | "error" = "success") {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -267,7 +346,6 @@ export default function EmprestimosPage() {
     }).catch(console.error);
   }, []);
 
-  // Filtros computados inline
   const hoje = new Date();
   const filtrados = emprestimos.filter(e => {
     const dataEmp = e.data_emprestimo.split("T")[0];
@@ -329,7 +407,14 @@ export default function EmprestimosPage() {
     <>
       <Toast msg={toast.msg} tipo={toast.tipo} visivel={toast.visivel} />
       <ConfirmModal aberto={confirmAberto} onConfirm={handleDeletar} onCancel={() => { setConfirmAberto(false); setEmpParaDeletar(null); }} />
-      <EmprestimoModal key={empEditando?.id ?? "novo"} aberto={modalAberto} emprestimo={empEditando} clientes={clientes} onClose={() => { setModalAberto(false); setEmpEditando(null); }} onSalvar={handleSalvar} />
+      <EmprestimoModal
+        key={modalKey}
+        aberto={modalAberto}
+        emprestimo={empEditando}
+        clientes={clientes}
+        onClose={() => { setModalAberto(false); setEmpEditando(null); }}
+        onSalvar={handleSalvar}
+      />
 
       <div className="flex flex-col gap-6">
 
@@ -339,7 +424,7 @@ export default function EmprestimosPage() {
             <h1 className="text-3xl font-extrabold">Empréstimos</h1>
             <p className="text-[#9ca3af] text-sm mt-1">Registre e acompanhe todos os empréstimos</p>
           </div>
-          <button onClick={() => { setEmpEditando(null); setModalAberto(true); }}
+          <button onClick={() => { setEmpEditando(null); setModalKey(k => k + 1); setModalAberto(true); }}
             className="flex items-center gap-2 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:shadow-[0_0_20px_rgba(59,130,246,0.5)] transition-all">
             <i className="fa-solid fa-plus"></i> Novo Empréstimo
           </button>
@@ -407,7 +492,7 @@ export default function EmprestimosPage() {
                   <tr><td colSpan={10} className="px-5 py-16 text-center text-[#9ca3af]">
                     <i className="fa-solid fa-money-bill-trend-up text-4xl opacity-20 block mb-3 text-[#3B82F6]"></i>
                     <p className="text-sm mb-4">Nenhum empréstimo encontrado.</p>
-                    <button onClick={() => { setEmpEditando(null); setModalAberto(true); }}
+                    <button onClick={() => { setEmpEditando(null); setModalKey(k => k + 1); setModalAberto(true); }}
                       className="mx-auto flex items-center gap-2 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white px-5 py-2.5 rounded-xl text-sm font-bold">
                       <i className="fa-solid fa-plus"></i> Registrar primeiro empréstimo
                     </button>
@@ -471,7 +556,7 @@ export default function EmprestimosPage() {
                             <option value="pago">Pago</option>
                             <option value="atrasado">Atrasado</option>
                           </select>
-                          <button onClick={() => { setEmpEditando(e); setModalAberto(true); }}
+                          <button onClick={() => { setEmpEditando(e); setModalKey(k => k + 1); setModalAberto(true); }}
                             className="border border-[#1e293b] text-[#9ca3af] px-2.5 py-1.5 rounded-lg text-xs hover:border-[#3B82F6] hover:text-[#3B82F6] transition-colors bg-transparent">
                             <i className="fa-solid fa-pen"></i>
                           </button>
