@@ -72,7 +72,7 @@ export default function Hero() {
         localStorage.setItem("token", dados.token);
         localStorage.setItem("usuarioEmail", dados.usuario.email);
         localStorage.setItem("isDemo", "true");
-        window.location.href = "/dashboard";
+        window.location.href = "/painel/dashboard";
       } else {
         alert("Erro ao ativar demonstração. Tente novamente.");
       }
