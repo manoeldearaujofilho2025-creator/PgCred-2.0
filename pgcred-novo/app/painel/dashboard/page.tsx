@@ -33,32 +33,16 @@ function calcularTermino(dataEmprestimo: string, numParcelas: number) {
   return data;
 }
 
-// =====================
-// SKELETON
-// =====================
 function Skeleton({ className }: { className?: string }) {
   return (
-    <div
-      className={`rounded-lg bg-gradient-to-r from-[#1e293b] via-[#273548] to-[#1e293b] bg-[length:200%_100%] animate-shimmer ${className}`}
-    />
+    <div className={`rounded-lg bg-gradient-to-r from-[#1e293b] via-[#273548] to-[#1e293b] bg-[length:200%_100%] animate-shimmer ${className}`} />
   );
 }
 
-// =====================
-// CARD DE RESUMO
-// =====================
-function SummaryCard({
-  icon, label, value, sub, color, loading,
-}: {
+function SummaryCard({ icon, label, value, sub, color, loading }: {
   icon: string; label: string; value: string; sub: string;
   color: "green" | "blue" | "red" | "yellow"; loading: boolean;
 }) {
-  const glowMap = {
-    green:  "rgba(59,130,246,0.2)",
-    blue:   "rgba(37,99,235,0.2)",
-    red:    "rgba(239,68,68,0.2)",
-    yellow: "rgba(245,158,11,0.2)",
-  };
   const iconColorMap = {
     green:  "text-[#3B82F6] bg-[rgba(59,130,246,0.1)]",
     blue:   "text-[#3B82F6] bg-[rgba(59,130,246,0.1)]",
@@ -67,10 +51,7 @@ function SummaryCard({
   };
 
   return (
-    <div
-      className="bg-[#0f172a] border border-[#1e293b] rounded-2xl p-6 relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-[rgba(59,130,246,0.3)]"
-      style={{ boxShadow: `0 0 0 0 ${glowMap[color]}` }}
-    >
+    <div className="bg-[#0f172a] border border-[#1e293b] rounded-2xl p-6 relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-[rgba(59,130,246,0.3)]">
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-base mb-4 ${iconColorMap[color]}`}>
         <i className={icon}></i>
       </div>
@@ -90,9 +71,6 @@ function SummaryCard({
   );
 }
 
-// =====================
-// BANNER DE ALERTA
-// =====================
 function AlertaBanner({ tipo, icone, msg, onClose }: {
   tipo: "warning" | "danger"; icone: string; msg: string; onClose: () => void;
 }) {
@@ -104,7 +82,7 @@ function AlertaBanner({ tipo, icone, msg, onClose }: {
     <div className={`flex items-center gap-3 px-5 py-3 rounded-xl border text-sm ${styles[tipo]}`}>
       <i className={`fa-solid ${icone}`}></i>
       <span className="flex-1 text-white" dangerouslySetInnerHTML={{ __html: msg }} />
-      <Link href="/emprestimos" className="text-[#3B82F6] underline text-xs ml-2">Ver →</Link>
+      <Link href="/painel/emprestimos" className="text-[#3B82F6] underline text-xs ml-2">Ver →</Link>
       <button onClick={onClose} className="text-[#9ca3af] hover:text-white ml-2 bg-transparent border-none cursor-pointer">
         <i className="fa-solid fa-xmark"></i>
       </button>
@@ -144,7 +122,6 @@ export default function Dashboard() {
         const atrasado = lista.filter((e: Emprestimo) => e.status === "atrasado").length;
         setStatus({ pago, pendente, atrasado, total: lista.length || 1 });
 
-        // Alertas
         const hoje    = new Date();
         const em7dias = new Date();
         em7dias.setDate(hoje.getDate() + 7);
@@ -178,13 +155,11 @@ export default function Dashboard() {
   return (
     <div className="flex flex-col gap-6">
 
-      {/* HEADER */}
       <div>
         <h1 className="text-3xl font-extrabold">Dashboard</h1>
         <p className="text-[#9ca3af] text-sm mt-1">Visão geral dos seus empréstimos e finanças</p>
       </div>
 
-      {/* ALERTAS */}
       {alertas.some((_, i) => alertasVisiveis[i]) && (
         <div className="flex flex-col gap-2">
           {alertas.map((a, i) =>
@@ -195,22 +170,19 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-        <SummaryCard icon="fa-solid fa-money-bill-trend-up" label="Total Emprestado"  value={moeda(resumo.total_emprestado)}   sub={`${resumo.total_emprestimos} empréstimos`}  color="green"  loading={loading} />
-        <SummaryCard icon="fa-solid fa-chart-line"          label="Lucro Total"        value={moeda(resumo.lucro_total)}         sub="sobre o capital emprestado"                 color="blue"   loading={loading} />
-        <SummaryCard icon="fa-solid fa-triangle-exclamation" label="Inadimplentes"    value={String(resumo.total_inadimplentes)} sub="empréstimos em atraso"                     color="red"    loading={loading} />
-        <SummaryCard icon="fa-solid fa-users"               label="Clientes Ativos"   value={String(resumo.total_clientes)}     sub="clientes cadastrados"                       color="yellow" loading={loading} />
+        <SummaryCard icon="fa-solid fa-money-bill-trend-up"  label="Total Emprestado"  value={moeda(resumo.total_emprestado)}    sub={`${resumo.total_emprestimos} empréstimos`} color="green"  loading={loading} />
+        <SummaryCard icon="fa-solid fa-chart-line"           label="Lucro Total"        value={moeda(resumo.lucro_total)}          sub="sobre o capital emprestado"                color="blue"   loading={loading} />
+        <SummaryCard icon="fa-solid fa-triangle-exclamation" label="Inadimplentes"      value={String(resumo.total_inadimplentes)} sub="empréstimos em atraso"                     color="red"    loading={loading} />
+        <SummaryCard icon="fa-solid fa-users"                label="Clientes Ativos"    value={String(resumo.total_clientes)}      sub="clientes cadastrados"                      color="yellow" loading={loading} />
       </div>
 
-      {/* BOTTOM GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
-        {/* EMPRÉSTIMOS RECENTES */}
         <div className="lg:col-span-2 bg-[#0f172a] border border-[#1e293b] rounded-2xl overflow-hidden">
           <div className="flex items-center justify-between px-6 py-4 border-b border-[#1e293b]">
             <h2 className="font-extrabold text-sm">Empréstimos Recentes</h2>
-            <Link href="/emprestimos" className="text-[#3B82F6] text-xs hover:text-[#2563EB] transition-colors">Ver todos →</Link>
+            <Link href="/painel/emprestimos" className="text-[#3B82F6] text-xs hover:text-[#2563EB] transition-colors">Ver todos →</Link>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -247,9 +219,9 @@ export default function Dashboard() {
                       <td className="px-5 py-3">{e.num_parcelas}x {moeda(e.valor_parcela)}</td>
                       <td className="px-5 py-3">
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold
-                          ${e.status === "pago"     ? "bg-[rgba(59,130,246,0.1)] text-[#3B82F6]"  : ""}
-                          ${e.status === "pendente" ? "bg-[rgba(245,158,11,0.1)] text-[#f59e0b]"  : ""}
-                          ${e.status === "atrasado" ? "bg-[rgba(239,68,68,0.1)]  text-[#ef4444]"  : ""}
+                          ${e.status === "pago"     ? "bg-[rgba(59,130,246,0.1)] text-[#3B82F6]" : ""}
+                          ${e.status === "pendente" ? "bg-[rgba(245,158,11,0.1)] text-[#f59e0b]" : ""}
+                          ${e.status === "atrasado" ? "bg-[rgba(239,68,68,0.1)]  text-[#ef4444]" : ""}
                         `}>
                           <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
                           {e.status.charAt(0).toUpperCase() + e.status.slice(1)}
@@ -263,16 +235,15 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* STATUS */}
         <div className="bg-[#0f172a] border border-[#1e293b] rounded-2xl overflow-hidden">
           <div className="px-6 py-4 border-b border-[#1e293b]">
             <h2 className="font-extrabold text-sm">Empréstimos por Status</h2>
           </div>
           <div className="divide-y divide-[#1e293b]">
             {[
-              { label: "Pagos",      count: status.pago,     color: "#3B82F6" },
-              { label: "Pendentes",  count: status.pendente, color: "#f59e0b" },
-              { label: "Atrasados",  count: status.atrasado, color: "#ef4444" },
+              { label: "Pagos",     count: status.pago,     color: "#3B82F6" },
+              { label: "Pendentes", count: status.pendente, color: "#f59e0b" },
+              { label: "Atrasados", count: status.atrasado, color: "#ef4444" },
             ].map((s) => (
               <div key={s.label} className="flex items-center gap-3 px-6 py-4 hover:bg-[#111827] transition-colors">
                 <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
