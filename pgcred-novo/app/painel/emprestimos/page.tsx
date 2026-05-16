@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 
 const API = "https://pgcred-2-0.onrender.com";
+const POR_PAGINA = 10;
 
 interface Cliente { id: number; nome: string; }
 
@@ -37,17 +38,65 @@ function calcularTerminoData(dataEmprestimo: string, numParcelas: number) {
   return data;
 }
 
-// Converte string monetária "1.245,00" para número 1245.00
 function parseMoeda(v: string): number {
   return parseFloat(v.replace(/\./g, "").replace(",", ".")) || 0;
 }
 
-// Formata número para string monetária "1.245,00"
 function formatMoeda(v: string): string {
   const digits = v.replace(/\D/g, "");
   if (!digits) return "";
   const num = parseInt(digits) / 100;
   return num.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+}
+
+// =====================
+// SKELETON
+// =====================
+function SkeletonRow({ cols }: { cols: number }) {
+  return (
+    <tr className="border-b border-[#1e293b]">
+      {Array.from({ length: cols }).map((_, i) => (
+        <td key={i} className="px-4 py-3">
+          <div className="h-4 rounded-md bg-gradient-to-r from-[#1e293b] via-[#273548] to-[#1e293b] bg-[length:200%_100%] animate-shimmer" />
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+// =====================
+// PAGINAÇÃO
+// =====================
+function Paginacao({ pagina, total, porPagina, onChange }: {
+  pagina: number; total: number; porPagina: number; onChange: (p: number) => void;
+}) {
+  const totalPaginas = Math.ceil(total / porPagina);
+  if (totalPaginas <= 1) return null;
+
+  return (
+    <div className="flex items-center justify-between px-6 py-4 border-t border-[#1e293b]">
+      <span className="text-[#9ca3af] text-xs">
+        Mostrando {Math.min((pagina - 1) * porPagina + 1, total)}–{Math.min(pagina * porPagina, total)} de {total}
+      </span>
+      <div className="flex items-center gap-1">
+        <button onClick={() => onChange(pagina - 1)} disabled={pagina === 1}
+          className="w-8 h-8 flex items-center justify-center rounded-lg border border-[#1e293b] text-[#9ca3af] hover:border-[#3B82F6] hover:text-[#3B82F6] disabled:opacity-30 disabled:cursor-not-allowed transition-colors bg-transparent text-xs">
+          <i className="fa-solid fa-chevron-left"></i>
+        </button>
+        {Array.from({ length: totalPaginas }).map((_, i) => (
+          <button key={i} onClick={() => onChange(i + 1)}
+            className={`w-8 h-8 flex items-center justify-center rounded-lg border text-xs font-bold transition-colors
+              ${pagina === i + 1 ? "bg-[rgba(59,130,246,0.1)] border-[rgba(59,130,246,0.3)] text-[#3B82F6]" : "border-[#1e293b] text-[#9ca3af] hover:border-[#3B82F6] hover:text-[#3B82F6] bg-transparent"}`}>
+            {i + 1}
+          </button>
+        ))}
+        <button onClick={() => onChange(pagina + 1)} disabled={pagina === totalPaginas}
+          className="w-8 h-8 flex items-center justify-center rounded-lg border border-[#1e293b] text-[#9ca3af] hover:border-[#3B82F6] hover:text-[#3B82F6] disabled:opacity-30 disabled:cursor-not-allowed transition-colors bg-transparent text-xs">
+          <i className="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  );
 }
 
 // =====================
@@ -90,18 +139,13 @@ function ConfirmModal({ aberto, onConfirm, onCancel }: { aberto: boolean; onConf
 // MODAL EMPRÉSTIMO
 // =====================
 function EmprestimoModal({ aberto, emprestimo, clientes, onClose, onSalvar }: {
-  aberto: boolean;
-  emprestimo: Emprestimo | null;
-  clientes: Cliente[];
-  onClose: () => void;
-  onSalvar: (dados: Partial<Emprestimo>, id?: number) => Promise<void>;
+  aberto: boolean; emprestimo: Emprestimo | null; clientes: Cliente[];
+  onClose: () => void; onSalvar: (dados: Partial<Emprestimo>, id?: number) => Promise<void>;
 }) {
   const [clienteId, setClienteId] = useState(emprestimo ? String(emprestimo.cliente_id) : "");
   const [clienteBusca, setClienteBusca] = useState(emprestimo ? emprestimo.cliente_nome : "");
   const [showSugestoes, setShowSugestoes] = useState(false);
-  const [valorDisplay, setValorDisplay] = useState(
-    emprestimo ? formatMoeda(String(Math.round(emprestimo.valor * 100))) : ""
-  );
+  const [valorDisplay, setValorDisplay] = useState(emprestimo ? formatMoeda(String(Math.round(emprestimo.valor * 100))) : "");
   const [taxaJuros, setTaxaJuros] = useState(emprestimo ? String(emprestimo.taxa_juros) : "");
   const [tipoJuros, setTipoJuros] = useState<"simples" | "price">(emprestimo?.tipo_juros ?? "simples");
   const [numParcelas, setNumParcelas] = useState(emprestimo ? String(emprestimo.num_parcelas) : "");
@@ -111,10 +155,7 @@ function EmprestimoModal({ aberto, emprestimo, clientes, onClose, onSalvar }: {
   const sugestoesRef = useRef<HTMLDivElement>(null);
 
   const valor = parseMoeda(valorDisplay);
-
-  const clientesFiltrados = clientes.filter(c =>
-    c.nome.toLowerCase().includes(clienteBusca.toLowerCase()) && clienteBusca.length > 0
-  );
+  const clientesFiltrados = clientes.filter(c => c.nome.toLowerCase().includes(clienteBusca.toLowerCase()) && clienteBusca.length > 0);
 
   function selecionarCliente(c: Cliente) {
     setClienteId(String(c.id));
@@ -122,7 +163,6 @@ function EmprestimoModal({ aberto, emprestimo, clientes, onClose, onSalvar }: {
     setShowSugestoes(false);
   }
 
-  // Simulação calculada inline
   const simAtual: Simulacao | null = (() => {
     const v = valor, t = parseFloat(taxaJuros), p = parseInt(numParcelas);
     if (!v || !t || !p) return null;
@@ -150,15 +190,7 @@ function EmprestimoModal({ aberto, emprestimo, clientes, onClose, onSalvar }: {
     e.preventDefault();
     if (!clienteId || !valor || !taxaJuros || !numParcelas || !dataEmprestimo) return;
     setLoading(true);
-    await onSalvar({
-      cliente_id: Number(clienteId),
-      valor,
-      taxa_juros: Number(taxaJuros),
-      tipo_juros: tipoJuros,
-      num_parcelas: Number(numParcelas),
-      data_emprestimo: dataEmprestimo,
-      observacoes
-    }, emprestimo?.id);
+    await onSalvar({ cliente_id: Number(clienteId), valor, taxa_juros: Number(taxaJuros), tipo_juros: tipoJuros, num_parcelas: Number(numParcelas), data_emprestimo: dataEmprestimo, observacoes }, emprestimo?.id);
     setLoading(false);
   }
 
@@ -173,34 +205,19 @@ function EmprestimoModal({ aberto, emprestimo, clientes, onClose, onSalvar }: {
       <div className="bg-[#111827] border border-[#1e293b] rounded-2xl p-8 w-full max-w-lg my-4">
         <h2 className="text-xl font-extrabold text-white mb-1">{emprestimo ? "Editar Empréstimo" : "Novo Empréstimo"}</h2>
         <p className="text-[#9ca3af] text-sm mb-6">{emprestimo ? "Atualize os dados" : "Preencha os dados para registrar"}</p>
-
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-
-          {/* BUSCA DE CLIENTE */}
           <div className="relative">
             <label className={labelClass}>Cliente *</label>
-            <input
-              className={inputClass}
-              placeholder="Digite o nome do cliente..."
-              value={clienteBusca}
+            <input className={inputClass} placeholder="Digite o nome do cliente..." value={clienteBusca}
               onChange={e => { setClienteBusca(e.target.value); setClienteId(""); setShowSugestoes(true); }}
               onFocus={() => setShowSugestoes(true)}
               onBlur={() => setTimeout(() => setShowSugestoes(false), 150)}
-              required={!clienteId}
-              autoComplete="off"
-            />
-            {/* Campo hidden para garantir que um cliente foi selecionado */}
-            {clienteId && <input type="hidden" value={clienteId} required />}
-
+              autoComplete="off" />
             {showSugestoes && clientesFiltrados.length > 0 && (
               <div ref={sugestoesRef} className="absolute z-50 w-full mt-1 bg-[#1e293b] border border-[#1e293b] rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.4)] max-h-48 overflow-y-auto">
                 {clientesFiltrados.map(c => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => selecionarCliente(c)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-[#111827] transition-colors"
-                  >
+                  <button key={c.id} type="button" onClick={() => selecionarCliente(c)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-[#111827] transition-colors">
                     <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#3B82F6] to-[#2563EB] flex items-center justify-center text-xs font-bold flex-shrink-0">
                       {c.nome.charAt(0).toUpperCase()}
                     </div>
@@ -209,7 +226,6 @@ function EmprestimoModal({ aberto, emprestimo, clientes, onClose, onSalvar }: {
                 ))}
               </div>
             )}
-
             {showSugestoes && clienteBusca.length > 0 && clientesFiltrados.length === 0 && (
               <div className="absolute z-50 w-full mt-1 bg-[#1e293b] border border-[#1e293b] rounded-xl px-4 py-3 text-sm text-[#9ca3af]">
                 Nenhum cliente encontrado
@@ -220,15 +236,8 @@ function EmprestimoModal({ aberto, emprestimo, clientes, onClose, onSalvar }: {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>Valor (R$) *</label>
-              <input
-                className={inputClass}
-                type="text"
-                inputMode="numeric"
-                placeholder="0,00"
-                value={valorDisplay}
-                onChange={e => setValorDisplay(formatMoeda(e.target.value))}
-                required
-              />
+              <input className={inputClass} type="text" inputMode="numeric" placeholder="0,00"
+                value={valorDisplay} onChange={e => setValorDisplay(formatMoeda(e.target.value))} required />
             </div>
             <div>
               <label className={labelClass}>Data *</label>
@@ -255,16 +264,10 @@ function EmprestimoModal({ aberto, emprestimo, clientes, onClose, onSalvar }: {
             <input className={inputClass} type="number" placeholder="Ex: 12" min="1" value={numParcelas} onChange={e => setNumParcelas(e.target.value)} required />
           </div>
 
-          {/* SIMULAÇÃO */}
           {simAtual && (
             <div className="bg-[#1e293b] border border-[rgba(59,130,246,0.2)] rounded-xl p-4">
               <h4 className="text-[#3B82F6] text-sm font-bold mb-3"><i className="fa-solid fa-calculator mr-2"></i>Simulação</h4>
-              {[
-                ["Valor emprestado", simAtual.valor], ["Taxa de juros", simAtual.taxa],
-                ["Tipo", simAtual.tipo], ["Parcelas", simAtual.parcelas],
-                ["Valor por parcela", simAtual.parcela], ["Início", simAtual.inicio],
-                ["Término", simAtual.termino],
-              ].map(([k, v]) => (
+              {[["Valor emprestado", simAtual.valor], ["Taxa de juros", simAtual.taxa], ["Tipo", simAtual.tipo], ["Parcelas", simAtual.parcelas], ["Valor por parcela", simAtual.parcela], ["Início", simAtual.inicio], ["Término", simAtual.termino]].map(([k, v]) => (
                 <div key={k} className="flex justify-between text-xs mb-1.5">
                   <span className="text-[#9ca3af]">{k}:</span>
                   <span className="text-white">{v}</span>
@@ -300,11 +303,13 @@ function EmprestimoModal({ aberto, emprestimo, clientes, onClose, onSalvar }: {
 export default function EmprestimosPage() {
   const [emprestimos, setEmprestimos] = useState<Emprestimo[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [carregando, setCarregando] = useState(true);
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("");
   const [filtroTipo, setFiltroTipo] = useState("");
   const [filtroDataInicio, setFiltroDataInicio] = useState("");
   const [filtroDataFim, setFiltroDataFim] = useState("");
+  const [pagina, setPagina] = useState(1);
   const [modalAberto, setModalAberto] = useState(false);
   const [modalKey, setModalKey] = useState(0);
   const [empEditando, setEmpEditando] = useState<Emprestimo | null>(null);
@@ -319,12 +324,29 @@ export default function EmprestimosPage() {
     toastTimer.current = setTimeout(() => setToast(t => ({ ...t, visivel: false })), 3500);
   }
 
+  // Carregamento inicial — setCarregando(false) fica no .then() que o linter aceita
+  useEffect(() => {
+    const t = localStorage.getItem("token");
+    if (!t) return;
+    Promise.all([
+      fetch(`${API}/emprestimos`, { headers: { Authorization: "Bearer " + t } }),
+      fetch(`${API}/clientes`, { headers: { Authorization: "Bearer " + t } }),
+    ]).then(async ([resEmp, resCli]) => {
+      const emp = await resEmp.json();
+      const cli = await resCli.json();
+      setEmprestimos(emp.emprestimos || []);
+      setClientes(cli.clientes || []);
+      setCarregando(false);
+    }).catch(() => setCarregando(false));
+  }, []);
+
+  // Recarregar após salvar/deletar — sem setCarregando para não acionar o linter
   async function carregarDados() {
     const t = localStorage.getItem("token");
     if (!t) return;
     const [resEmp, resCli] = await Promise.all([
       fetch(`${API}/emprestimos`, { headers: { Authorization: "Bearer " + t } }),
-      fetch(`${API}/clientes`,   { headers: { Authorization: "Bearer " + t } }),
+      fetch(`${API}/clientes`, { headers: { Authorization: "Bearer " + t } }),
     ]);
     const emp = await resEmp.json();
     const cli = await resCli.json();
@@ -332,39 +354,30 @@ export default function EmprestimosPage() {
     setClientes(cli.clientes || []);
   }
 
-  useEffect(() => {
-    const t = localStorage.getItem("token");
-    if (!t) return;
-    Promise.all([
-      fetch(`${API}/emprestimos`, { headers: { Authorization: "Bearer " + t } }),
-      fetch(`${API}/clientes`,   { headers: { Authorization: "Bearer " + t } }),
-    ]).then(async ([resEmp, resCli]) => {
-      const emp = await resEmp.json();
-      const cli = await resCli.json();
-      setEmprestimos(emp.emprestimos || []);
-      setClientes(cli.clientes || []);
-    }).catch(console.error);
-  }, []);
-
   const hoje = new Date();
+
   const filtrados = emprestimos.filter(e => {
     const dataEmp = e.data_emprestimo.split("T")[0];
     return (
       e.cliente_nome.toLowerCase().includes(busca.toLowerCase()) &&
       (filtroStatus === "" || e.status === filtroStatus) &&
-      (filtroTipo   === "" || e.tipo_juros === filtroTipo) &&
+      (filtroTipo === "" || e.tipo_juros === filtroTipo) &&
       (!filtroDataInicio || dataEmp >= filtroDataInicio) &&
-      (!filtroDataFim    || dataEmp <= filtroDataFim)
+      (!filtroDataFim || dataEmp <= filtroDataFim)
     );
   });
 
+  const totalPaginas = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA));
+  const paginaValida = Math.min(pagina, totalPaginas);
+  const paginados = filtrados.slice((paginaValida - 1) * POR_PAGINA, paginaValida * POR_PAGINA);
+
   const totalEmp = emprestimos.reduce((s, e) => s + Number(e.valor), 0);
-  const lucro    = emprestimos.reduce((s, e) => s + (Number(e.valor_total) - Number(e.valor)), 0);
+  const lucro = emprestimos.reduce((s, e) => s + (Number(e.valor_total) - Number(e.valor)), 0);
   const atrasado = emprestimos.filter(e => e.status === "atrasado").length;
 
   async function handleSalvar(dados: Partial<Emprestimo>, id?: number) {
     try {
-      const url    = id ? `${API}/emprestimos/${id}` : `${API}/emprestimos`;
+      const url = id ? `${API}/emprestimos/${id}` : `${API}/emprestimos`;
       const method = id ? "PUT" : "POST";
       const res = await fetch(url, {
         method,
@@ -387,8 +400,7 @@ export default function EmprestimosPage() {
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + (localStorage.getItem("token") ?? "") },
         body: JSON.stringify({ status }),
       });
-      showToast("Status atualizado!");
-      carregarDados();
+      showToast("Status atualizado!"); carregarDados();
     } catch { showToast("Erro ao atualizar status.", "error"); }
   }
 
@@ -405,19 +417,17 @@ export default function EmprestimosPage() {
 
   return (
     <>
+      <style>{`
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .animate-shimmer { animation: shimmer 1.4s infinite; }
+      `}</style>
+
       <Toast msg={toast.msg} tipo={toast.tipo} visivel={toast.visivel} />
       <ConfirmModal aberto={confirmAberto} onConfirm={handleDeletar} onCancel={() => { setConfirmAberto(false); setEmpParaDeletar(null); }} />
-      <EmprestimoModal
-        key={modalKey}
-        aberto={modalAberto}
-        emprestimo={empEditando}
-        clientes={clientes}
-        onClose={() => { setModalAberto(false); setEmpEditando(null); }}
-        onSalvar={handleSalvar}
-      />
+      <EmprestimoModal key={modalKey} aberto={modalAberto} emprestimo={empEditando} clientes={clientes}
+        onClose={() => { setModalAberto(false); setEmpEditando(null); }} onSalvar={handleSalvar} />
 
       <div className="flex flex-col gap-6">
-
         {/* HEADER */}
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
@@ -434,8 +444,8 @@ export default function EmprestimosPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             { label: "Total Emprestado", value: moeda(totalEmp), color: "border-[rgba(59,130,246,0.2)]" },
-            { label: "Lucro Estimado",   value: moeda(lucro),    color: "border-[rgba(37,99,235,0.2)]"  },
-            { label: "Em Atraso",        value: String(atrasado), color: "border-[rgba(239,68,68,0.2)]" },
+            { label: "Lucro Estimado", value: moeda(lucro), color: "border-[rgba(37,99,235,0.2)]" },
+            { label: "Em Atraso", value: String(atrasado), color: "border-[rgba(239,68,68,0.2)]" },
           ].map(c => (
             <div key={c.label} className={`bg-[#0f172a] border ${c.color} rounded-2xl p-5`}>
               <div className="text-[10px] font-bold uppercase tracking-widest text-[#9ca3af] mb-2">{c.label}</div>
@@ -448,23 +458,24 @@ export default function EmprestimosPage() {
         <div className="flex flex-wrap gap-3">
           <div className="flex items-center gap-2 bg-[#0f172a] border border-[#1e293b] rounded-xl px-4 py-2.5 flex-1 min-w-[200px] focus-within:border-[#3B82F6] transition-all">
             <i className="fa-solid fa-magnifying-glass text-[#9ca3af] text-sm"></i>
-            <input type="text" placeholder="Buscar por cliente..." value={busca} onChange={e => setBusca(e.target.value)}
+            <input type="text" placeholder="Buscar por cliente..." value={busca}
+              onChange={e => { setBusca(e.target.value); setPagina(1); }}
               className="bg-transparent outline-none text-white text-sm w-full placeholder:text-[#9ca3af]" />
           </div>
-          <select className={selectClass} value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}>
+          <select className={selectClass} value={filtroStatus} onChange={e => { setFiltroStatus(e.target.value); setPagina(1); }}>
             <option value="">Todos os status</option>
             <option value="pendente">Pendente</option>
             <option value="pago">Pago</option>
             <option value="atrasado">Atrasado</option>
           </select>
-          <select className={selectClass} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
+          <select className={selectClass} value={filtroTipo} onChange={e => { setFiltroTipo(e.target.value); setPagina(1); }}>
             <option value="">Todos os tipos</option>
             <option value="simples">Juros Simples</option>
             <option value="price">Price</option>
           </select>
-          <input type="date" className={selectClass} value={filtroDataInicio} onChange={e => setFiltroDataInicio(e.target.value)} title="Data início" />
-          <input type="date" className={selectClass} value={filtroDataFim} onChange={e => setFiltroDataFim(e.target.value)} title="Data fim" />
-          <button onClick={() => { setBusca(""); setFiltroStatus(""); setFiltroTipo(""); setFiltroDataInicio(""); setFiltroDataFim(""); }}
+          <input type="date" className={selectClass} value={filtroDataInicio} onChange={e => { setFiltroDataInicio(e.target.value); setPagina(1); }} title="Data início" />
+          <input type="date" className={selectClass} value={filtroDataFim} onChange={e => { setFiltroDataFim(e.target.value); setPagina(1); }} title="Data fim" />
+          <button onClick={() => { setBusca(""); setFiltroStatus(""); setFiltroTipo(""); setFiltroDataInicio(""); setFiltroDataFim(""); setPagina(1); }}
             className="flex items-center gap-2 border border-[#1e293b] text-[#9ca3af] px-4 py-2.5 rounded-xl text-sm hover:border-[#ef4444] hover:text-[#ef4444] transition-colors bg-transparent">
             <i className="fa-solid fa-xmark"></i> Limpar
           </button>
@@ -482,13 +493,15 @@ export default function EmprestimosPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#1e293b]">
-                  {["Cliente","Valor","Total c/ Juros","Parcelas","Tipo","Início","Término","Mora","Status",""].map(h => (
+                  {["Cliente", "Valor", "Total c/ Juros", "Parcelas", "Tipo", "Início", "Término", "Mora", "Status", ""].map(h => (
                     <th key={h} className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-[#9ca3af] whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filtrados.length === 0 ? (
+                {carregando ? (
+                  Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} cols={10} />)
+                ) : filtrados.length === 0 ? (
                   <tr><td colSpan={10} className="px-5 py-16 text-center text-[#9ca3af]">
                     <i className="fa-solid fa-money-bill-trend-up text-4xl opacity-20 block mb-3 text-[#3B82F6]"></i>
                     <p className="text-sm mb-4">Nenhum empréstimo encontrado.</p>
@@ -497,12 +510,11 @@ export default function EmprestimosPage() {
                       <i className="fa-solid fa-plus"></i> Registrar primeiro empréstimo
                     </button>
                   </td></tr>
-                ) : filtrados.map(e => {
+                ) : paginados.map(e => {
                   const termino = calcularTerminoData(e.data_emprestimo, e.num_parcelas);
                   const terminoStr = termino.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
                   const vencido = e.status !== "pago" && termino < hoje;
                   const terminoColor = e.status === "pago" ? "#9ca3af" : vencido ? "#ef4444" : "#3B82F6";
-
                   let mora = "—";
                   if (e.status === "atrasado") {
                     const meses = Math.max(1, Math.floor((hoje.getTime() - termino.getTime()) / (1000 * 60 * 60 * 24 * 30)));
@@ -523,33 +535,29 @@ export default function EmprestimosPage() {
                       <td className="px-4 py-3 whitespace-nowrap">{moeda(e.valor_total)}</td>
                       <td className="px-4 py-3 whitespace-nowrap">{e.num_parcelas}x {moeda(e.valor_parcela)}</td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold
-                          ${e.tipo_juros === "simples" ? "bg-[rgba(59,130,246,0.1)] text-[#3B82F6]" : "bg-[rgba(37,99,235,0.1)] text-[#2563EB]"}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold ${e.tipo_juros === "simples" ? "bg-[rgba(59,130,246,0.1)] text-[#3B82F6]" : "bg-[rgba(37,99,235,0.1)] text-[#2563EB]"}`}>
                           {e.tipo_juros === "simples" ? "Simples" : "Price"}
                         </span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-[#9ca3af]">{new Date(e.data_emprestimo).toLocaleDateString("pt-BR")}</td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="flex items-center gap-1.5 text-xs" style={{ color: terminoColor }}>
-                          <i className="fa-solid fa-calendar-check text-[10px]"></i>
-                          {terminoStr}
+                          <i className="fa-solid fa-calendar-check text-[10px]"></i>{terminoStr}
                         </span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-xs font-bold" style={{ color: e.status === "atrasado" ? "#ef4444" : "#9ca3af" }}>{mora}</td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold
-                          ${e.status === "pago"     ? "bg-[rgba(59,130,246,0.1)] text-[#3B82F6]"  : ""}
-                          ${e.status === "pendente" ? "bg-[rgba(245,158,11,0.1)] text-[#f59e0b]"  : ""}
-                          ${e.status === "atrasado" ? "bg-[rgba(239,68,68,0.1)]  text-[#ef4444]"  : ""}`}>
+                          ${e.status === "pago" ? "bg-[rgba(59,130,246,0.1)] text-[#3B82F6]" : ""}
+                          ${e.status === "pendente" ? "bg-[rgba(245,158,11,0.1)] text-[#f59e0b]" : ""}
+                          ${e.status === "atrasado" ? "bg-[rgba(239,68,68,0.1)] text-[#ef4444]" : ""}`}>
                           <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
                           {e.status.charAt(0).toUpperCase() + e.status.slice(1)}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <select
-                            defaultValue=""
-                            onChange={ev => { if (ev.target.value) handleAtualizarStatus(e.id, ev.target.value); ev.target.value = ""; }}
+                          <select defaultValue="" onChange={ev => { if (ev.target.value) handleAtualizarStatus(e.id, ev.target.value); ev.target.value = ""; }}
                             className="bg-[#1e293b] border border-[#1e293b] text-[#9ca3af] px-2 py-1.5 rounded-lg text-xs cursor-pointer outline-none hover:border-[#3B82F6] transition-colors">
                             <option value="" disabled>Status</option>
                             <option value="pendente">Pendente</option>
@@ -572,6 +580,7 @@ export default function EmprestimosPage() {
               </tbody>
             </table>
           </div>
+          <Paginacao pagina={paginaValida} total={filtrados.length} porPagina={POR_PAGINA} onChange={setPagina} />
         </div>
       </div>
     </>
